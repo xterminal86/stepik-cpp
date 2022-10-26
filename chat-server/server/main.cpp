@@ -151,9 +151,11 @@ std::string CreateMessage(int whoFd, const std::string& msg)
   std::stringstream ss;
 
   std::string timestamp = StringFormat("[%s]  ", GetTime().data());
-  std::string sender    = StringFormat("%s (%i) | ", IpToString(ci.Ip).data(), whoFd);
+  std::string sender    = StringFormat("%s (%i)", IpToString(ci.Ip).data(), whoFd);
 
-  ss << timestamp << sender << msg;
+  sender.insert(sender.end(), 22 - sender.length(), ' ');
+
+  ss << timestamp << sender << " | " << msg;
 
   return ss.str();
 }
@@ -201,13 +203,21 @@ const std::vector<std::string> Greeting =
 
 void SendGreeting(int toWho)
 {
+  std::string timestamp = StringFormat("[%s]  ", GetTime().data());
+  std::string server    = "SERVER";
+  server.insert(server.end(), 22 - server.length(), ' ');
+
   for (size_t i = 0; i < Greeting.size(); i++)
   {
-    std::string msg = StringFormat("[%s]  SERVER | %s", GetTime().data(), Greeting[i].data());
+    std::stringstream ss;
+
+    ss << timestamp << server << " | " << Greeting[i];
+
+    std::string str = ss.str();
 
     int succ = send(toWho,
-                    msg.data(),
-                    msg.length(),
+                    str.data(),
+                    str.length(),
                     MSG_NOSIGNAL);
 
     //
