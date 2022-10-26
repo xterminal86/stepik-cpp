@@ -386,7 +386,7 @@ int main(int argc, char* argv[])
 
         printf("%s\n", userConnectedMsg.data());
 
-        SendMulticast(userConnectedMsg);
+        SendMulticast(userConnectedMsg, client);
 
         epoll_event evt;
         evt.data.fd = client;

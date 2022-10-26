@@ -272,10 +272,10 @@ void GraphicsThread()
                          { 2 * twQ, 2 * thQ },
                        " SERVER OFFLINE ",
                        TG::Colors::White,
-                       TG::Colors::Red,
+                       0xAA0000,
                        TG::Colors::White,
                        0x440000,
-                       TG::Colors::Black);
+                       0x220000);
 
       printer.PrintFB(twHalf,
                       thHalf,
@@ -289,7 +289,7 @@ void GraphicsThread()
 
   endwin();
 
-  printf("graphics thread returning\n");
+  // printf("graphics thread returning\n");
 }
 
 // =============================================================================
@@ -355,13 +355,18 @@ void NetworkThread(ServerData sd)
 
   while (IsRunning.load())
   {
-    int n = recv(s, buffer, MessageSize, MSG_NOSIGNAL);
-    if (n == 0 and (errno != EAGAIN))
+    //
+    // Check server status.
+    //
+    int alive = recv(s, buffer, 1, MSG_PEEK);
+    if (alive == 0)
     {
       ServerOnline = false;
       break;
     }
-    else if (n > 0)
+
+    int n = recv(s, buffer, MessageSize, MSG_NOSIGNAL);
+    if (n > 0)
     {
       std::string msg(buffer, n);
       if (not msg.empty())
@@ -398,7 +403,7 @@ void NetworkThread(ServerData sd)
 
   CloseConnection(s);
 
-  printf("network thread returning\n");
+  // printf("network thread returning\n");
 }
 
 // =============================================================================
