@@ -79,12 +79,19 @@ void SetNonblock(int fd)
 
 // =============================================================================
 
-void CloseConnection(int fd)
+void CloseConnection(int fd, bool ignoreErrors = true)
 {
   int succ = shutdown(fd, SHUT_RDWR);
-  CheckError((succ == -1), StringFormat("shutdown() fd = %i failed!", fd));
+  if (not ignoreErrors)
+  {
+    CheckError((succ == -1), StringFormat("shutdown() fd = %i failed!", fd));
+  }
+
   succ = close(fd);
-  CheckError((succ == -1), StringFormat("close() fd = %i failed!", fd));
+  if (not ignoreErrors)
+  {
+    CheckError((succ == -1), StringFormat("close() fd = %i failed!", fd));
+  }
 }
 
 // =============================================================================
@@ -447,7 +454,7 @@ int main(int argc, char* argv[])
     }
   }
 
-  CloseConnection(masterSocket);
+  CloseConnection(masterSocket, false);
 
   return 0;
 }
