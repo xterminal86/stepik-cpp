@@ -2,6 +2,5 @@ build*/
 obj/
 CMakeLists.txt.user*
 core.*
-*.txt
 *.out
 *.exe

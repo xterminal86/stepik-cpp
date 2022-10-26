@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.0)
+set (TARGET_NAME server)
+project (${TARGET_NAME})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=return-type -Wall")
+file(GLOB SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+add_executable(${TARGET_NAME} ${SOURCES})
