@@ -162,6 +162,21 @@ std::string CreateMessage(int whoFd, const std::string& msg)
 
 // =============================================================================
 
+std::string CreateServerMessage(const std::string& msg)
+{
+   std::string serverText = "SERVER";
+   serverText.insert(serverText.end(), 22 - serverText.length(), ' ');
+
+   std::string res = StringFormat("[%s]  %s | %s",
+                                  GetTime().data(),
+                                  serverText.data(),
+                                  msg.data());
+
+   return res;
+}
+
+// =============================================================================
+
 std::string GetOnlineUsers()
 {
   std::stringstream ss;
@@ -203,31 +218,17 @@ const std::vector<std::string> Greeting =
 
 void SendGreeting(int toWho)
 {
-  std::string timestamp = StringFormat("[%s]  ", GetTime().data());
-  std::string server    = "SERVER";
-  server.insert(server.end(), 22 - server.length(), ' ');
+  std::stringstream ss;
 
-  for (size_t i = 0; i < Greeting.size(); i++)
+  ss << (uint8_t)0x06;
+
+  for (auto& line : Greeting)
   {
-    std::stringstream ss;
-
-    ss << timestamp << server << " | " << Greeting[i];
-
-    std::string str = ss.str();
-
-    int succ = send(toWho,
-                    str.data(),
-                    str.length(),
-                    MSG_NOSIGNAL);
-
-    //
-    // If for some reason we can't send, beat it.
-    //
-    if (succ == -1)
-    {
-      break;
-    }
+    std::string msg = CreateServerMessage(line);
+    ss << msg << (uint8_t)0x0;
   }
+
+  send(toWho, ss.str().data(), ss.str().length(), MSG_NOSIGNAL);
 }
 
 // =============================================================================
@@ -396,14 +397,13 @@ int main(int argc, char* argv[])
 
         SendMulticast(GetOnlineUsers());
 
-        std::string userConnectedMsg = StringFormat("[%s]  SERVER | %s (%i) connected",
-                                                    GetTime().data(),
-                                                    clientIp.data(),
-                                                    client);
+        std::string payload = StringFormat("%s (%i) connected",
+                                           clientIp.data(), client);
+        std::string msg = CreateServerMessage(payload);
 
-        printf("%s\n", userConnectedMsg.data());
+        printf("%s\n", payload.data());
 
-        SendMulticast(userConnectedMsg, client);
+        SendMulticast(msg, client);
 
         epoll_event evt;
         evt.data.fd = client;
@@ -432,16 +432,18 @@ int main(int argc, char* argv[])
         //
         if (res == 0 && (errno != EAGAIN))
         {
-          std::string userDisconnectedMsg = StringFormat("[%s]  SERVER | %s (%i) disconnected",
-                                                         GetTime().data(),
-                                                         IpToString(ClientInfoByFd[events[i].data.fd].Ip).data(),
-                                                         events[i].data.fd);
+          const auto& ci = ClientInfoByFd[events[i].data.fd];
+          std::string clientIp = IpToString(ci.Ip);
 
-          printf("%s\n", userDisconnectedMsg.data());
+          std::string payload = StringFormat("%s (%i) disconnected",
+                                             clientIp.data(), events[i].data.fd);
+          std::string msg = CreateServerMessage(payload);
+
+          printf("%s\n", payload.data());
 
           ClientInfoByFd.erase(events[i].data.fd);
 
-          SendMulticast(userDisconnectedMsg);
+          SendMulticast(msg);
           SendMulticast(GetOnlineUsers());
 
           succ = epoll_ctl(epollFd,

@@ -59,6 +59,9 @@ std::string GetTime()
 
 // =============================================================================
 
+
+// =============================================================================
+
 void CheckError(bool isError, const std::string& errorMessage)
 {
   if (isError)
@@ -270,12 +273,12 @@ void GraphicsThread()
     {
       printer.DrawWindow({ twHalf - twQ, thHalf - thQ },
                          { 2 * twQ, 2 * thQ },
-                       " SERVER OFFLINE ",
-                       TG::Colors::White,
-                       0xAA0000,
-                       TG::Colors::White,
-                       0x440000,
-                       0x220000);
+                         " SERVER OFFLINE ",
+                         TG::Colors::White,
+                         0xAA0000,
+                         TG::Colors::White,
+                         0x440000,
+                         0x220000);
 
       printer.PrintFB(twHalf,
                       thHalf,
@@ -332,6 +335,52 @@ void ParseOnlineUsers(const std::string& msg)
 
 // =============================================================================
 
+void ParseServerMessage(const std::string& msg)
+{
+  char c = msg[0];
+
+  switch (c)
+  {
+    //
+    // Server's greeting
+    //
+    case 0x06:
+    {
+      std::stringstream ss;
+      for (size_t i = 1; i < msg.length(); i++)
+      {
+        if (msg[i] == '\0')
+        {
+          Messages.push_back(ss.str());
+          ss.str(std::string());
+        }
+        else
+        {
+          ss << msg[i];
+        }
+      }
+    }
+    break;
+
+    //
+    // Online users
+    //
+    case 0x07:
+    {
+      ParseOnlineUsers(msg);
+    }
+    break;
+
+    default:
+    {
+      Messages.push_back(msg);
+    }
+    break;
+  }
+}
+
+// =============================================================================
+
 void NetworkThread(ServerData sd)
 {
   const uint32_t MessageSize = 1024;
@@ -371,14 +420,7 @@ void NetworkThread(ServerData sd)
       std::string msg(buffer, n);
       if (not msg.empty())
       {
-        if (msg[0] == 0x07)
-        {
-          ParseOnlineUsers(msg);
-        }
-        else
-        {
-          Messages.push_back(msg);
-        }
+        ParseServerMessage(msg);
       }
     }
 
